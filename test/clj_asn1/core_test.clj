@@ -17,6 +17,7 @@
     (byte val)))
 
 (defn vec->byte-arr [v] (into-array Byte/TYPE (map ubyte v)))
+(defn vec->buf      [v] (-> v vec->byte-arr ByteBuffer/wrap))
 (defn str->buffer   [s] (ByteBuffer/wrap (.getBytes s)))
 
 (defn string-tlv
@@ -35,13 +36,13 @@
 
 (deftest length-computations
   (testing "Indefinite length"
-    (is (nil? (asn1/read-length-desc (vec->byte-arr [0x80])))))
+    (is (nil? (asn1/read-length-desc (vec->buf [0x80])))))
 
   (testing "Definite short form"
-    (is (= 42 (asn1/read-length-desc (vec->byte-arr [42])))))
+    (is (= 0x42 (asn1/read-length-desc (vec->buf [0x42])))))
 
   (testing "Definite long form"
-    (is (= 527 (asn1/read-length-desc (vec->byte-arr [0x82 0x02 0x0f]))))))
+    (is (= 527 (asn1/read-length-desc (vec->buf [0x82 0x02 0x0f]))))))
 
 (deftest reading-der
   (testing "reading integer values"
@@ -63,7 +64,8 @@
 
     (is (= (asn1/oid [1 3 6 1 4 1 34380 1 1 3])
            (asn1/decode
-             (vec->byte-arr [0x06 0x0B 0x2B 0x06 0x01 0x04 0x01 0x82 0x8C 0x4C 0x01 0x01 0x03])))))
+             (vec->byte-arr [0x06 0x0B 0x2B 0x06 0x01 0x04 0x01 0x82 0x8C 0x4C
+                             0x01 0x01 0x03])))))
 
   (testing "reading boolean values"
     (is (= (asn1/decode (vec->byte-arr [0x01 0x01 0xFF]))
